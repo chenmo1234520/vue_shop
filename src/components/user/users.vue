@@ -18,7 +18,7 @@
  <el-col :span="4"><el-button  type="primary" @click="adddialogVisible =true">添加用户</el-button></el-col>
 </el-row>
 <el-table :data="userlist" border stripe>
-     <el-table-column type="index">
+     <el-table-column type="index" label="#" width="40">
     </el-table-column>
     <el-table-column
         prop="username"
@@ -62,7 +62,7 @@
 <el-button type="danger" icon="el-icon-delete" size="mini" @click="removeuser(scope.row.id)"></el-button>
 </el-tooltip>
 <el-tooltip  effect="dark" content="分配角色" placement="top" :enterable=false>
-<el-button type="warning" icon="el-icon-setting" size="mini"></el-button>
+<el-button type="warning" icon="el-icon-setting" size="mini" @click="setrole(scope.row)"></el-button>
 </el-tooltip>
         </template>
     </el-table-column>
@@ -130,6 +130,30 @@
     <el-button type="primary" @click="xiugaiuser">确 定</el-button>
   </span>
 </el-dialog>
+
+<el-dialog
+  title="分配角色"
+  :visible.sync="setroleVisible"
+  width="50%" @close='setroleclosed'
+  >
+<div>
+  <p>当前的用户:{{userinfo.username}}</p>
+  <p>当前的角色:{{userinfo.role_name}}</p>
+  <p>分配新角色:<el-select v-model="selectdeid" placeholder="请选择">
+    <el-option
+      v-for="item in roleslist"
+      :key="item.id"
+      :label="item.roleName"
+      :value="item.id">
+    </el-option>
+  </el-select>
+  </p>
+</div>
+  <span slot="footer" class="dialog-footer">
+    <el-button @click="setroleVisible= false">取 消</el-button>
+    <el-button type="primary" @click="saveroleinfo">确 定</el-button>
+  </span>
+</el-dialog>
     </div>
 </template>
 <script>
@@ -146,6 +170,10 @@ export default {
       callback(new Error('请输入合法手机号'))
     }
     return {
+      selectdeid: '',
+      roleslist: [],
+      userinfo: {},
+      setroleVisible: false,
       xiugaiform: {},
       // 查询到的用户信息
       xiugaiVisible: false,
@@ -259,6 +287,28 @@ export default {
       if (res2.meta.status !== 200) return this.$message.error('删除用户失败！')
       this.getuserlist()
       this.$message.success('删除用户成功！')
+    },
+    async setrole (userinfo) {
+      this.userinfo = userinfo
+      const { data: res } = await this.$http.get('roles')
+      if (res.meta.status !== 200) return this.$message.error('获取角色列表失败！')
+      this.roleslist = res.data
+
+      this.setroleVisible = true
+    },
+    async  saveroleinfo () {
+      if (!this.selectdeid) this.$message.error('请选择要分配角色！')
+      const { data: res } = await this.$http.put(`users/${this.userinfo.id}/role`, { rid: this.selectdeid })
+      console.log(res)
+      if (res.meta.status !== 200) return this.$message.error(res.meta.msg)
+
+      this.$message.success('更新角色成功！')
+      this.getuserlist()
+      this.setroleVisible = false
+    },
+    setroleclosed () {
+      this.selectdeid = ''
+      this.userinfo = {}
     }
 
   }
